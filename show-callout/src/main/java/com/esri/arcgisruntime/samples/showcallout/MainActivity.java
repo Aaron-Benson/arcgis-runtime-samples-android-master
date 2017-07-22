@@ -18,17 +18,26 @@ package com.esri.arcgisruntime.samples.showcallout;
 
 import android.Manifest;
 import android.app.ActionBar;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.Window;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -92,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
     private double userLocY;
 
     private final SpatialReference wgs84 = SpatialReference.create(4326);
-
+    final Context context = this;
 
     private int requestCode = 2;
     String[] reqPermissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission
@@ -153,7 +162,30 @@ public class MainActivity extends AppCompatActivity {
                                     //Select the identified feature
                                     mFeatureLayer.selectFeature(mIdentifiedFeature);
                                     mFeatureSelected = true;
-                                    Toast.makeText(getApplicationContext(), "Found Unicorn!!!", Toast.LENGTH_LONG).show();
+                                    //Toast.makeText(getApplicationContext(), "Found Unicorn!!!", Toast.LENGTH_LONG).show();
+
+                                    // begin unicorn
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                                    builder.setPositiveButton("OK",null);
+                                    final AlertDialog dialog = builder.create();
+                                    LayoutInflater inflater = getLayoutInflater();
+                                    View dialogLayout = inflater.inflate(R.layout.found_unicorn_alert, null);
+                                    dialog.setView(dialogLayout);
+                                    dialog.requestWindowFeature(Window.FEATURE_NO_TITLE);
+                                    dialog.show();
+                                    dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+
+                                        // @Override
+                                        public void onShow(DialogInterface d) {
+                                            ImageView image = (ImageView) dialog.findViewById(R.id.foundUnicornImage);
+                                            Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.found_unicorn_image);
+                                            float imageWidthInPX = (float)image.getWidth();
+                                            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(Math.round(imageWidthInPX),
+                                                    Math.round(imageWidthInPX * (float)icon.getHeight() / (float)icon.getWidth()));
+                                            image.setLayoutParams(layoutParams);
+                                        }
+                                    });
+                                    // end unicorn
                                 }
                             }
                         } catch (InterruptedException | ExecutionException e) {
