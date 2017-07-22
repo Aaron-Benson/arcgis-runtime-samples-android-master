@@ -66,10 +66,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
+
+import au.com.bytecode.opencsv.CSVReader;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -158,7 +162,8 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
             } else {
-                Point movedPoint = mMapView.screenToLocation(new android.graphics.Point(Math.round(width), Math.round(height)));
+                //Point movedPoint = mMapView.screenToLocation(new android.graphics.Point(Math.round(width), Math.round(height)));
+                Point movedPoint = generateNewUnicornPoint();
                 final Point normalizedPoint = (Point) GeometryEngine.normalizeCentralMeridian(movedPoint);
                 mIdentifiedFeature.addDoneLoadingListener(new Runnable() {
                     @Override
@@ -310,8 +315,29 @@ public class MainActivity extends AppCompatActivity {
         task.execute(new String[] { webAddress });
     }
 
-    private void generateNewUnicornPoint() {
+    private Point generateNewUnicornPoint() {
+        String next[] = {};
+        String[] cla = null;
 
+        //int rand = new Random(35).nextInt();
+        int rand = (int)(Math.random() * 34 + 1);
+
+        try {
+            CSVReader reader = new CSVReader(new InputStreamReader(getAssets().open("unicorn_locations.csv")));
+            int i = 0;
+            while(true && i < rand) {
+                next = reader.readNext();
+                if(next != null) {
+                    cla = next;
+                } else {
+                    break;
+                }
+                i++;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new Point(Double.parseDouble(cla[0]), Double.parseDouble(cla[1]), wgs84);
     }
 
 }
