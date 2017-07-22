@@ -69,6 +69,9 @@ public class MainActivity extends AppCompatActivity {
     private MapView mMapView;
     private Callout mCallout;
 
+    private double userLocX;
+    private double userLocY;
+
     private final SpatialReference wgs84 = SpatialReference.create(4326);
 
 
@@ -77,6 +80,7 @@ public class MainActivity extends AppCompatActivity {
             .ACCESS_COARSE_LOCATION};
 
     private class DownloadWebPageTask extends AsyncTask<String, Void, double[]> {
+
         @Override
         protected double[] doInBackground(String... urls) {
             double[] response = new double[2];
@@ -110,7 +114,14 @@ public class MainActivity extends AppCompatActivity {
         }
         @Override
         protected void onPostExecute(double[] result) {
-            int hi = 1;
+            double distance = distanceCheckUnicorn(userLocX, userLocY, result[0], result[1]);
+            int hi = 0;
+        }
+
+        private double distanceCheckUnicorn(double latUser, double longUser, double latUnicorn, double longUnicorn) {
+            double distance = Math.sqrt(Math.pow(latUnicorn - latUser, 2) + Math.pow(longUnicorn - longUser, 2));
+            distance *= 111.325f * 1000; //Gets distance in meters
+            return distance;
         }
     }
 
@@ -152,28 +163,10 @@ public class MainActivity extends AppCompatActivity {
                 mMapView.getLocationDisplay().setAutoPanMode(LocationDisplay.AutoPanMode.RECENTER);
                 if (!mMapView.getLocationDisplay().isStarted())
                     mMapView.getLocationDisplay().startAsync();
-                double userXLoc = mMapView.getLocationDisplay().getLocation().getPosition().getX();
-                double userYLoc = mMapView.getLocationDisplay().getLocation().getPosition().getY();
+                userLocX = mMapView.getLocationDisplay().getLocation().getPosition().getX();
+                userLocY = mMapView.getLocationDisplay().getLocation().getPosition().getY();
 
                 readWebpage("https://services8.arcgis.com/DnMrXNZ4mQTjDjkz/ArcGIS/rest/services/Unicorn/FeatureServer/0");
-
-                // Get unicorn location from server
-                /*while (serviceFeatureTable.getExtent() == null) {}
-                SpatialReference map = mFeatureLayer.getSpatialReference();
-                double unicornXLoc = mFeatureLayer.getFullExtent().getXMin() / (111.325 * 1000);
-                double unicornYLoc = mFeatureLayer.getFullExtent().getYMax() / (111.325 * 1000);
-                mMap.getOperationalLayers().remove(mMap.getOperationalLayers().size() - 1);
-                final ServiceFeatureTable serviceFeatureTable = new ServiceFeatureTable("https://services8.arcgis.com/DnMrXNZ4mQTjDjkz/ArcGIS/rest/services/Unicorn/FeatureServer/0");
-                final FeatureLayer mFeatureLayer = new FeatureLayer(serviceFeatureTable);
-                mMap.getOperationalLayers().add(mFeatureLayer);*/
-
-                // Check distance
-                //double distance = distanceCheckUnicorn(userXLoc, userYLoc, unicornXLoc, unicornYLoc);
-
-                // Upload change to unicorn location and alert user if found
-
-
-
                 h.postDelayed(this, delay);
             }
         }, delay);
