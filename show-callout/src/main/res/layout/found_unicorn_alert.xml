@@ -6,8 +6,8 @@
 
     <ImageView
         android:id="@+id/foundUnicornImage"
-        android:layout_width="wrap_content"
-        android:layout_height="350dp"
-        android:src="@drawable/found_unicorn_image"/>
+        android:layout_width="385dp"
+        android:layout_height="515dp"
+        android:src="@drawable/found_unicorn_image" />
 
 </LinearLayout>
