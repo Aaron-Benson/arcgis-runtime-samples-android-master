@@ -17,6 +17,7 @@
 package com.esri.arcgisruntime.samples.showcallout;
 
 import android.Manifest;
+import android.app.ActionBar;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.os.AsyncTask;
@@ -34,6 +35,7 @@ import android.widget.Toast;
 import com.esri.arcgisruntime.concurrent.ListenableFuture;
 import com.esri.arcgisruntime.data.ArcGISFeature;
 import com.esri.arcgisruntime.data.Feature;
+import com.esri.arcgisruntime.data.FeatureEditResult;
 import com.esri.arcgisruntime.data.FeatureQueryResult;
 import com.esri.arcgisruntime.data.Field;
 import com.esri.arcgisruntime.data.QueryParameters;
@@ -128,33 +130,64 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(double[] result) {
             double distance = distanceCheckUnicorn(userLocX, userLocY, result[0], result[1]);
+            if (!mFeatureSelected) {
+                android.graphics.Point screenCoordinate = new android.graphics.Point(Math.round(width / 2), Math.round(height / 2));
+                double tolerance = 20;
+                //Identify Layers to find features
+                final ListenableFuture<IdentifyLayerResult> identifyFuture = mMapView.identifyLayerAsync(mFeatureLayer, screenCoordinate, tolerance, false, 1);
+                identifyFuture.addDoneListener(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            // call get on the future to get the result
+                            IdentifyLayerResult layerResult = identifyFuture.get();
+                            List<GeoElement> resultGeoElements = layerResult.getElements();
 
-            android.graphics.Point screenCoordinate = new android.graphics.Point(Math.round(width/2), Math.round(height/2));
-            double tolerance = 20;
-            //Identify Layers to find features
-            final ListenableFuture<IdentifyLayerResult> identifyFuture = mMapView.identifyLayerAsync(mFeatureLayer, screenCoordinate, tolerance, false, 1);
-            identifyFuture.addDoneListener(new Runnable() {
-                @Override
-                public void run() {
-                    try {
-                        // call get on the future to get the result
-                        IdentifyLayerResult layerResult = identifyFuture.get();
-                        List<GeoElement> resultGeoElements = layerResult.getElements();
-
-                        if(resultGeoElements.size() > 0){
-                            if(resultGeoElements.get(0) instanceof ArcGISFeature){
-                                mIdentifiedFeature = (ArcGISFeature) resultGeoElements.get(0);
-                                //Select the identified feature
-                                mFeatureLayer.selectFeature(mIdentifiedFeature);
-                                mFeatureSelected = true;
-                                Toast.makeText(getApplicationContext(), "Found Unicorn!!!" , Toast.LENGTH_LONG).show();
+                            if (resultGeoElements.size() > 0) {
+                                if (resultGeoElements.get(0) instanceof ArcGISFeature) {
+                                    mIdentifiedFeature = (ArcGISFeature) resultGeoElements.get(0);
+                                    //Select the identified feature
+                                    mFeatureLayer.selectFeature(mIdentifiedFeature);
+                                    mFeatureSelected = true;
+                                    Toast.makeText(getApplicationContext(), "Found Unicorn!!!", Toast.LENGTH_LONG).show();
+                                }
                             }
+                        } catch (InterruptedException | ExecutionException e) {
+                            Log.e(getResources().getString(R.string.app_name), "Update feature failed: " + e.getMessage());
                         }
-                    } catch (InterruptedException | ExecutionException e) {
-                        Log.e(getResources().getString(R.string.app_name), "Update feature failed: " + e.getMessage());
                     }
-                }
-            });
+                });
+            } else {
+                Point movedPoint = mMapView.screenToLocation(new android.graphics.Point(Math.round(width), Math.round(height)));
+                final Point normalizedPoint = (Point) GeometryEngine.normalizeCentralMeridian(movedPoint);
+                mIdentifiedFeature.addDoneLoadingListener(new Runnable() {
+                    @Override
+                    public void run() {
+                        mIdentifiedFeature.setGeometry(normalizedPoint);
+                        final ListenableFuture<Void> updateFuture = mFeatureLayer.getFeatureTable().updateFeatureAsync(mIdentifiedFeature);
+                        updateFuture.addDoneListener(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    // track the update
+                                    updateFuture.get();
+                                    // apply edits once the update has completed
+                                    if (updateFuture.isDone()) {
+                                        applyEditsToServer();
+                                        mFeatureLayer.clearSelection();
+                                        mFeatureSelected = false;
+                                    } else {
+                                        Log.e(getResources().getString(R.string.app_name), "Update feature failed");
+                                    }
+                                } catch (InterruptedException | ExecutionException e) {
+                                    Log.e(getResources().getString(R.string.app_name), "Update feature failed: " + e.getMessage());
+                                }
+                            }
+                        });
+                    }
+                });
+                mIdentifiedFeature.loadAsync();
+            }
             //if (distance < 4)
             //    Toast.makeText(getApplicationContext(), "You found the unicorn!!!", Toast.LENGTH_SHORT).show();
             //Toast.makeText(getApplicationContext(), "Distance: " + Double.toString(distance), Toast.LENGTH_SHORT).show();
@@ -167,13 +200,28 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void applyEditsToServer() {
+        final ListenableFuture<List<FeatureEditResult>> applyEditsFuture = ((ServiceFeatureTable) mFeatureLayer.getFeatureTable()).applyEditsAsync();
+        applyEditsFuture.addDoneListener(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    // get results of edit
+                    List<FeatureEditResult> featureEditResultsList = applyEditsFuture.get();
+                    if (!featureEditResultsList.get(0).hasCompletedWithErrors()) {
+                        Toast.makeText(getApplicationContext(), "Applied Geometry Edits to Server. ObjectID: " + featureEditResultsList.get(0).getObjectId(), Toast.LENGTH_SHORT).show();
+                    }
+                } catch (InterruptedException | ExecutionException e) {
+                    Log.e(getResources().getString(R.string.app_name), "Update feature failed: " + e.getMessage());
+                }
+            }
+        });
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-        width = this.getResources().getDisplayMetrics().widthPixels;
-        height = this.getResources().getDisplayMetrics().heightPixels;
 
         // inflate MapView from layout
         mMapView = (MapView) findViewById(R.id.mapView);
@@ -182,6 +230,7 @@ public class MainActivity extends AppCompatActivity {
         //mMap = new ArcGISMap(Basemap.createImagery());
         // set the map to be displayed in this view
         mMapView.setMap(mMap);
+
         mMapView.setOnTouchListener(new DefaultMapViewOnTouchListener(getApplicationContext(), mMapView) {
             @Override
             public boolean onRotate(MotionEvent event, double rotationAngle) {
@@ -192,6 +241,7 @@ public class MainActivity extends AppCompatActivity {
             public boolean onTouch(View view, MotionEvent event) {
                 return false;
             }
+
         });
         // If an error is found, handle the failure to start.
         // Check permissions to see if failure may be due to lack of permissions.
@@ -204,6 +254,8 @@ public class MainActivity extends AppCompatActivity {
             // If permissions are not already granted, request permission from the user.
             ActivityCompat.requestPermissions(MainActivity.this, reqPermissions, requestCode);
         }
+
+
 
         final ServiceFeatureTable serviceFeatureTable = new ServiceFeatureTable("https://services8.arcgis.com/DnMrXNZ4mQTjDjkz/ArcGIS/rest/services/Unicorn/FeatureServer/0");
         mFeatureLayer = new FeatureLayer(serviceFeatureTable);
@@ -252,8 +304,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void readWebpage(String webAddress) {
+        width = mMapView.getWidth();
+        height = mMapView.getHeight();
         DownloadWebPageTask task = new DownloadWebPageTask();
         task.execute(new String[] { webAddress });
+    }
+
+    private void generateNewUnicornPoint() {
+
     }
 
 }
