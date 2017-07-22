@@ -27,9 +27,12 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.esri.arcgisruntime.concurrent.ListenableFuture;
+import com.esri.arcgisruntime.data.ArcGISFeature;
 import com.esri.arcgisruntime.data.Feature;
 import com.esri.arcgisruntime.data.FeatureQueryResult;
 import com.esri.arcgisruntime.data.Field;
@@ -43,10 +46,12 @@ import com.esri.arcgisruntime.geometry.SpatialReferences;
 import com.esri.arcgisruntime.layers.FeatureLayer;
 import com.esri.arcgisruntime.mapping.ArcGISMap;
 import com.esri.arcgisruntime.mapping.Basemap;
+import com.esri.arcgisruntime.mapping.GeoElement;
 import com.esri.arcgisruntime.mapping.view.Callout;
 import com.esri.arcgisruntime.mapping.view.DefaultMapViewOnTouchListener;
 import com.esri.arcgisruntime.mapping.view.Graphic;
 import com.esri.arcgisruntime.mapping.view.GraphicsOverlay;
+import com.esri.arcgisruntime.mapping.view.IdentifyLayerResult;
 import com.esri.arcgisruntime.mapping.view.LocationDisplay;
 import com.esri.arcgisruntime.mapping.view.MapView;
 import com.esri.arcgisruntime.symbology.SimpleMarkerSymbol;
@@ -60,7 +65,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -68,6 +75,12 @@ public class MainActivity extends AppCompatActivity {
     private static final String sTag = "Gesture";
     private MapView mMapView;
     private Callout mCallout;
+    private FeatureLayer mFeatureLayer;
+    private boolean mFeatureSelected = false;
+    private ArcGISFeature mIdentifiedFeature;
+
+    private int width = 0;
+    private int height = 0;
 
     private double userLocX;
     private double userLocY;
@@ -115,7 +128,36 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(double[] result) {
             double distance = distanceCheckUnicorn(userLocX, userLocY, result[0], result[1]);
-            int hi = 0;
+
+            android.graphics.Point screenCoordinate = new android.graphics.Point(Math.round(width/2), Math.round(height/2));
+            double tolerance = 20;
+            //Identify Layers to find features
+            final ListenableFuture<IdentifyLayerResult> identifyFuture = mMapView.identifyLayerAsync(mFeatureLayer, screenCoordinate, tolerance, false, 1);
+            identifyFuture.addDoneListener(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        // call get on the future to get the result
+                        IdentifyLayerResult layerResult = identifyFuture.get();
+                        List<GeoElement> resultGeoElements = layerResult.getElements();
+
+                        if(resultGeoElements.size() > 0){
+                            if(resultGeoElements.get(0) instanceof ArcGISFeature){
+                                mIdentifiedFeature = (ArcGISFeature) resultGeoElements.get(0);
+                                //Select the identified feature
+                                mFeatureLayer.selectFeature(mIdentifiedFeature);
+                                mFeatureSelected = true;
+                                Toast.makeText(getApplicationContext(), "Found Unicorn!!!" , Toast.LENGTH_LONG).show();
+                            }
+                        }
+                    } catch (InterruptedException | ExecutionException e) {
+                        Log.e(getResources().getString(R.string.app_name), "Update feature failed: " + e.getMessage());
+                    }
+                }
+            });
+            //if (distance < 4)
+            //    Toast.makeText(getApplicationContext(), "You found the unicorn!!!", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(getApplicationContext(), "Distance: " + Double.toString(distance), Toast.LENGTH_SHORT).show();
         }
 
         private double distanceCheckUnicorn(double latUser, double longUser, double latUnicorn, double longUnicorn) {
@@ -130,6 +172,9 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        width = this.getResources().getDisplayMetrics().widthPixels;
+        height = this.getResources().getDisplayMetrics().heightPixels;
+
         // inflate MapView from layout
         mMapView = (MapView) findViewById(R.id.mapView);
         // create a map with the Basemap Type topographic
@@ -137,7 +182,17 @@ public class MainActivity extends AppCompatActivity {
         //mMap = new ArcGISMap(Basemap.createImagery());
         // set the map to be displayed in this view
         mMapView.setMap(mMap);
+        mMapView.setOnTouchListener(new DefaultMapViewOnTouchListener(getApplicationContext(), mMapView) {
+            @Override
+            public boolean onRotate(MotionEvent event, double rotationAngle) {
+                return false;
+            }
 
+            @Override
+            public boolean onTouch(View view, MotionEvent event) {
+                return false;
+            }
+        });
         // If an error is found, handle the failure to start.
         // Check permissions to see if failure may be due to lack of permissions.
         boolean permissionCheck1 = ContextCompat.checkSelfPermission(MainActivity.this, reqPermissions[0]) ==
@@ -151,7 +206,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         final ServiceFeatureTable serviceFeatureTable = new ServiceFeatureTable("https://services8.arcgis.com/DnMrXNZ4mQTjDjkz/ArcGIS/rest/services/Unicorn/FeatureServer/0");
-        final FeatureLayer mFeatureLayer = new FeatureLayer(serviceFeatureTable);
+        mFeatureLayer = new FeatureLayer(serviceFeatureTable);
         mMap.getOperationalLayers().add(mFeatureLayer);
 
         final Handler h = new Handler();
@@ -160,7 +215,9 @@ public class MainActivity extends AppCompatActivity {
         h.postDelayed(new Runnable(){
             public void run(){
                 // Get user location
+                mMapView.getLocationDisplay().setAutoPanMode(LocationDisplay.AutoPanMode.OFF);
                 mMapView.getLocationDisplay().setAutoPanMode(LocationDisplay.AutoPanMode.RECENTER);
+
                 if (!mMapView.getLocationDisplay().isStarted())
                     mMapView.getLocationDisplay().startAsync();
                 userLocX = mMapView.getLocationDisplay().getLocation().getPosition().getX();
