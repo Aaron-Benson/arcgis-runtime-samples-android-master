@@ -19,19 +19,20 @@
 
     <ImageView
     android:id="@+id/outside_imageview"
-    android:layout_width="90px"
-    android:layout_height="90px"
+    android:layout_width="120px"
+    android:layout_height="120px"
     android:layout_alignBottom="@id/mapView"
     android:layout_alignLeft="@id/mapView"
     android:scaleType="fitXY" />
 
     <ImageView
         android:id="@+id/pointer_imageview"
-        android:layout_width="90px"
-        android:layout_height="90px"
-        android:paddingBottom="80px"
+        android:layout_width="120px"
+        android:layout_height="220px"
+        android:paddingBottom="100px"
         android:layout_alignBottom="@id/mapView"
         android:layout_alignLeft="@id/mapView"
-        android:scaleType="fitXY" />
+        android:scaleType="fitXY"
+        android:interpolator="@android:anim/bounce_interpolator"></ImageView>
 
 </RelativeLayout>

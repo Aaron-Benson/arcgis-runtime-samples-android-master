@@ -17,6 +17,7 @@
 package com.esri.arcgisruntime.samples.showcallout;
 
 import android.Manifest;
+import android.animation.ObjectAnimator;
 import android.app.ActionBar;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -102,6 +103,8 @@ public class MainActivity extends AppCompatActivity {
     private double userLocY;
 
     private ImageView imageView;
+    private ImageView pointerView;
+    private float pointerViewInitLocation;
 
     private final SpatialReference wgs84 = SpatialReference.create(4326);
     final Context context = this;
@@ -115,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected double[] doInBackground(String... urls) {
             double[] response = new double[2];
-            String htmlContent = "";
+            /*String htmlContent = "";
             for (String url : urls) {
                 DefaultHttpClient client = new DefaultHttpClient();
                 HttpGet httpGet = new HttpGet(url);
@@ -140,15 +143,16 @@ public class MainActivity extends AppCompatActivity {
             while (Character.isDigit(htmlContent.charAt(endIndexX)) || htmlContent.charAt(endIndexX) == '-' || htmlContent.charAt(endIndexX) == '.') {endIndexX++;}
             int beginIndexY = htmlContent.indexOf("YMin: ") + 6;
             int endIndexY = beginIndexY + 1;
-            while (Character.isDigit(htmlContent.charAt(endIndexY)) || htmlContent.charAt(endIndexY) == '-' || htmlContent.charAt(endIndexY) == '.') {endIndexY++;}
-            return new double[] { Double.parseDouble(htmlContent.substring(beginIndexX, endIndexX)), Double.parseDouble(htmlContent.substring(beginIndexY, endIndexY)) };
+            while (Character.isDigit(htmlContent.charAt(endIndexY)) || htmlContent.charAt(endIndexY) == '-' || htmlContent.charAt(endIndexY) == '.') {endIndexY++;}*/
+            //return new double[] { Double.parseDouble(htmlContent.substring(beginIndexX, endIndexX)), Double.parseDouble(htmlContent.substring(beginIndexY, endIndexY)) };
+            return response;
         }
         @Override
         protected void onPostExecute(double[] result) {
             double distance = 0;
 
             QueryParameters query = new QueryParameters();
-            query.setWhereClause("OBJECTID = 110");
+            query.setWhereClause("OBJECTID = 111");
             query.setReturnGeometry(true);
             query.setOutSpatialReference(wgs84);
             final ListenableFuture<FeatureQueryResult> queryResult = mFeatureLayer.getFeatureTable().queryFeaturesAsync(query);
@@ -353,7 +357,13 @@ public class MainActivity extends AppCompatActivity {
         }, delay);
 
         imageView = (ImageView) findViewById(R.id.outside_imageview);
-        imageView.setImageResource(R.drawable.lvl1);
+        imageView.setImageResource(R.drawable.lvl9);
+        pointerView = (ImageView) findViewById(R.id.pointer_imageview);
+        pointerView.setImageResource(R.drawable.pointer);
+        ViewGroup.LayoutParams params = imageView.getLayoutParams();
+        pointerViewInitLocation = pointerView.getX();
+        params.width=120*9;
+        imageView.setLayoutParams(params);
     }
 
 
@@ -386,37 +396,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void UpdateDistanceBar(double distance){
-        ViewGroup.LayoutParams params = imageView.getLayoutParams();
 
         if (distance < 25) {
-            imageView.setImageResource(R.drawable.lvl9);
-            params.width=90*9;
+            pointerView.setX(pointerViewInitLocation + 120 * 8);
         } else if (distance < 50) {
-            params.width=90*8;
-            imageView.setImageResource(R.drawable.lvl8);
+            pointerView.setX(pointerViewInitLocation + 120 * 7);
         } else if (distance < 75) {
-            params.width=90*7;
-            imageView.setImageResource(R.drawable.lvl7);
+            pointerView.setX(pointerViewInitLocation + 120 * 6);
         } else if (distance < 100) {
-            params.width=90*6;
-            imageView.setImageResource(R.drawable.lvl6);
+            pointerView.setX(pointerViewInitLocation + 120 * 5);
         } else if (distance < 125) {
-            params.width=90*5;
-            imageView.setImageResource(R.drawable.lvl5);
+            pointerView.setX(pointerViewInitLocation + 120 * 4);
         } else if (distance < 150) {
-            params.width=90*4;
-            imageView.setImageResource(R.drawable.lvl4);
+            pointerView.setX(pointerViewInitLocation + 120 * 3);
         } else if (distance < 175) {
-            params.width=90*3;
-            imageView.setImageResource(R.drawable.lvl3);
+            pointerView.setX(pointerViewInitLocation + 120 * 2);
         } else if (distance < 200) {
-            params.width=90*2;
-            imageView.setImageResource(R.drawable.lvl2);
+            pointerView.setX(pointerViewInitLocation + 120);
         } else {
-            params.width=90;
-            imageView.setImageResource(R.drawable.lvl1);
+            pointerView.setX(pointerViewInitLocation);
         }
-        imageView.setLayoutParams(params);
+        Toast.makeText(getApplicationContext(), "Distance: " + Double.toString(distance), Toast.LENGTH_SHORT).show();
     }
 
     private Point generateNewUnicornPoint() {
