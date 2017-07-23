@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout  xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content">
 
     <ImageView
         android:id="@+id/foundUnicornImage"
-        android:layout_width="385dp"
-        android:layout_height="409dp"
-        android:src="@drawable/unicorn_art" />
-   
-    <EditText
-        android:id="@+id/editText"
-        android:layout_width="300dp"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:inputType="textPersonName"
-        android:text="You found Fire, the Unicorn!" />
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:src="@drawable/foundunicorn01"/>
 
-</LinearLayout>
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="20dp"
+        android:layout_centerHorizontal="true"
+        android:text="Fire blesses you with 3 days of wonderment!" />
+
+</RelativeLayout>

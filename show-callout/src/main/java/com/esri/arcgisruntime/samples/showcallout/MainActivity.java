@@ -205,11 +205,15 @@ public class MainActivity extends AppCompatActivity {
                                         // @Override
                                         public void onShow(DialogInterface d) {
                                             ImageView image = (ImageView) dialog.findViewById(R.id.foundUnicornImage);
-                                            Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.found_unicorn_image);
-                                            float imageWidthInPX = (float)image.getWidth();
-                                            LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(Math.round(imageWidthInPX),
-                                                    Math.round(imageWidthInPX * (float)icon.getHeight() / (float)icon.getWidth()));
-                                            image.setLayoutParams(layoutParams);
+                                            ViewGroup.LayoutParams params = image.getLayoutParams();
+                                            image.setImageResource(R.drawable.foundunicorn01);
+                                             //params.width=90*9;
+                                            // Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.found_unicorn_image);
+                                            // float imageWidthInPX = (float)image.getWidth();
+                                            //LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(Math.round(imageWidthInPX),
+                                            //        Math.round(imageWidthInPX * (float)icon.getHeight() / (float)icon.getWidth()));
+                                            // image.setLayoutParams(layoutParams);
+
                                         }
                                     });
                                     // end unicorn image popup
