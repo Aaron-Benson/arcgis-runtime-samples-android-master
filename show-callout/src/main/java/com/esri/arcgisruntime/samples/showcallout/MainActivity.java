@@ -106,12 +106,23 @@ public class MainActivity extends AppCompatActivity {
     private ImageView pointerView;
     private float pointerViewInitLocation;
 
+    private ArrayList<HistoricCoordinate> historicCoordinates;
+
     private final SpatialReference wgs84 = SpatialReference.create(4326);
     final Context context = this;
 
     private int requestCode = 2;
     String[] reqPermissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission
             .ACCESS_COARSE_LOCATION};
+
+    private class HistoricCoordinate {
+        public double x;
+        public double y;
+        public HistoricCoordinate(double x, double y) {
+            this.x = x;
+            this.y = y;
+        }
+    }
 
     private class DownloadWebPageTask extends AsyncTask<String, Void, double[]> {
 
@@ -173,6 +184,10 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
 
+            Point currentLocation = mMapView.screenToLocation(new android.graphics.Point(Math.round(width / 2), Math.round(height / 2)));
+            if (currentLocation != null)
+                historicCoordinates.add(new HistoricCoordinate(currentLocation.getX(), currentLocation.getY()));
+
             if (!mFeatureSelected) {
 
                // mFeatureLayer.setDefinitionExpression("OBJECTID == 107");
@@ -219,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
                                     // end unicorn image popup
 
                                     // message on top of
-                                    Toast.makeText(getApplicationContext(), "You found Fire, the Unicorn!!!", Toast.LENGTH_LONG).show();
+                                    //Toast.makeText(getApplicationContext(), "You found Fire, the Unicorn!!!", Toast.LENGTH_LONG).show();
 
                                 }
                             }
@@ -281,7 +296,7 @@ public class MainActivity extends AppCompatActivity {
                     // get results of edit
                     List<FeatureEditResult> featureEditResultsList = applyEditsFuture.get();
                     if (!featureEditResultsList.get(0).hasCompletedWithErrors()) {
-                        Toast.makeText(getApplicationContext(), "Applied Geometry Edits to Server. ObjectID: " + featureEditResultsList.get(0).getObjectId(), Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(getApplicationContext(), "Applied Geometry Edits to Server. ObjectID: " + featureEditResultsList.get(0).getObjectId(), Toast.LENGTH_SHORT).show();
                     }
                 } catch (InterruptedException | ExecutionException e) {
                     Log.e(getResources().getString(R.string.app_name), "Update feature failed: " + e.getMessage());
@@ -368,15 +383,15 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause(){
         super.onPause();
         mMapView.pause();
+        // Send historic data to ArcGIS Online
     }
 
     @Override
     protected void onResume(){
         super.onResume();
         mMapView.resume();
+        historicCoordinates = new ArrayList<HistoricCoordinate>();
     }
-
-
 
     private double distanceCheckUnicorn(double latUser, double longUser, double latUnicorn, double longUnicorn) {
         double distance = Math.sqrt(Math.pow(latUnicorn - latUser, 2) + Math.pow(longUnicorn - longUser, 2));
@@ -412,7 +427,7 @@ public class MainActivity extends AppCompatActivity {
         } else {
             pointerView.setX(pointerViewInitLocation);
         }
-        Toast.makeText(getApplicationContext(), "Distance: " + Double.toString(distance), Toast.LENGTH_SHORT).show();
+        Toast.makeText(getApplicationContext(), String.format("Distance: %.2f ft", distance), Toast.LENGTH_LONG).show();
     }
 
     private Point generateNewUnicornPoint() {
