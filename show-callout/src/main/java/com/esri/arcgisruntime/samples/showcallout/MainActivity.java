@@ -142,10 +142,35 @@ public class MainActivity extends AppCompatActivity {
         }
         @Override
         protected void onPostExecute(double[] result) {
-            double distance = distanceCheckUnicorn(userLocX, userLocY, result[0], result[1]);
+            double distance = 0;
+
+            QueryParameters query = new QueryParameters();
+            query.setWhereClause("OBJECTID = 108");
+            query.setReturnGeometry(true);
+            query.setOutSpatialReference(wgs84);
+            final ListenableFuture<FeatureQueryResult> queryResult = mFeatureLayer.getFeatureTable().queryFeaturesAsync(query);
+            queryResult.addDoneListener(new Runnable() {
+                @Override
+                public void run() {
+                    try {
+                        // call get on the future to get the result
+                        FeatureQueryResult result = queryResult.get();
+                        Feature feature = result.iterator().next();
+                        Point p = (Point) feature.getGeometry();
+                        double x = p.getX();
+                        double y = p.getY();
+                        double distance = distanceCheckUnicorn(userLocX, userLocY, x, y);
+                        Toast.makeText(getApplicationContext(), "Distance: " + Double.toString(distance), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {}
+
+                }
+            });
+
             if (!mFeatureSelected) {
+
+               // mFeatureLayer.setDefinitionExpression("OBJECTID == 107");
                 android.graphics.Point screenCoordinate = new android.graphics.Point(Math.round(width / 2), Math.round(height / 2));
-                double tolerance = 20;
+                double tolerance = 30;
                 //Identify Layers to find features
                 final ListenableFuture<IdentifyLayerResult> identifyFuture = mMapView.identifyLayerAsync(mFeatureLayer, screenCoordinate, tolerance, false, 1);
                 identifyFuture.addDoneListener(new Runnable() {
@@ -230,7 +255,7 @@ public class MainActivity extends AppCompatActivity {
             }
             //if (distance < 4)
             //    Toast.makeText(getApplicationContext(), "You found the unicorn!!!", Toast.LENGTH_SHORT).show();
-            //Toast.makeText(getApplicationContext(), "Distance: " + Double.toString(distance), Toast.LENGTH_SHORT).show();
+
         }
 
         private double distanceCheckUnicorn(double latUser, double longUser, double latUnicorn, double longUnicorn) {
@@ -376,24 +401,3 @@ public class MainActivity extends AppCompatActivity {
     }
 
 }
-
-/*
-    android.graphics.Point screenPoint = new android.graphics.Point(Math.round(motionEvent.getX()),
-            Math.round(motionEvent.getY()));
-    // create a map point from screen point
-    Point mapPoint = mMapView.screenToLocation(screenPoint);
-    // convert to WGS84 for lat/lon format
-    Point wgs84Point = (Point) GeometryEngine.project(mapPoint, SpatialReferences.getWgs84());
-    // create a textview for the callout
-    TextView calloutContent = new TextView(getApplicationContext());
-                calloutContent.setTextColor(Color.BLACK);
-                        calloutContent.setSingleLine();
-                        // format coordinates to 4 decimal places
-                        calloutContent.setText("Lat: " +  String.format("%.4f", wgs84Point.getY()) +
-                        ", Lon: " + String.format("%.4f", wgs84Point.getX()));
-
-                        // get callout, set content and show
-                        mCallout = mMapView.getCallout();
-                        mCallout.setLocation(mapPoint);
-                        mCallout.setContent(calloutContent);
-                        mCallout.show();*/
