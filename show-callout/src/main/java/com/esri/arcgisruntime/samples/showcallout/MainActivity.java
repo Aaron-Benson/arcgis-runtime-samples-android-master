@@ -35,6 +35,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.Window;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -100,6 +101,8 @@ public class MainActivity extends AppCompatActivity {
     private double userLocX;
     private double userLocY;
 
+    private ImageView imageView;
+
     private final SpatialReference wgs84 = SpatialReference.create(4326);
     final Context context = this;
 
@@ -145,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
             double distance = 0;
 
             QueryParameters query = new QueryParameters();
-            query.setWhereClause("OBJECTID = 108");
+            query.setWhereClause("OBJECTID = 110");
             query.setReturnGeometry(true);
             query.setOutSpatialReference(wgs84);
             final ListenableFuture<FeatureQueryResult> queryResult = mFeatureLayer.getFeatureTable().queryFeaturesAsync(query);
@@ -159,8 +162,8 @@ public class MainActivity extends AppCompatActivity {
                         Point p = (Point) feature.getGeometry();
                         double x = p.getX();
                         double y = p.getY();
-                        double distance = distanceCheckUnicorn(userLocX, userLocY, x, y);
-                        Toast.makeText(getApplicationContext(), "Distance: " + Double.toString(distance), Toast.LENGTH_SHORT).show();
+                        UpdateDistanceBar(distanceCheckUnicorn(userLocX, userLocY, x, y));
+                        //Toast.makeText(getApplicationContext(), "Distance: " + Double.toString(distance), Toast.LENGTH_SHORT).show();
                     } catch (Exception e) {}
 
                 }
@@ -344,6 +347,9 @@ public class MainActivity extends AppCompatActivity {
                 h.postDelayed(this, delay);
             }
         }, delay);
+
+        imageView = (ImageView) findViewById(R.id.outside_imageview);
+        imageView.setImageResource(R.drawable.lvl1);
     }
 
 
@@ -373,6 +379,40 @@ public class MainActivity extends AppCompatActivity {
         height = mMapView.getHeight();
         DownloadWebPageTask task = new DownloadWebPageTask();
         task.execute(new String[] { webAddress });
+    }
+
+    private void UpdateDistanceBar(double distance){
+        ViewGroup.LayoutParams params = imageView.getLayoutParams();
+
+        if (distance < 25) {
+            imageView.setImageResource(R.drawable.lvl9);
+            params.width=90*9;
+        } else if (distance < 50) {
+            params.width=90*8;
+            imageView.setImageResource(R.drawable.lvl8);
+        } else if (distance < 75) {
+            params.width=90*7;
+            imageView.setImageResource(R.drawable.lvl7);
+        } else if (distance < 100) {
+            params.width=90*6;
+            imageView.setImageResource(R.drawable.lvl6);
+        } else if (distance < 125) {
+            params.width=90*5;
+            imageView.setImageResource(R.drawable.lvl5);
+        } else if (distance < 150) {
+            params.width=90*4;
+            imageView.setImageResource(R.drawable.lvl4);
+        } else if (distance < 175) {
+            params.width=90*3;
+            imageView.setImageResource(R.drawable.lvl3);
+        } else if (distance < 200) {
+            params.width=90*2;
+            imageView.setImageResource(R.drawable.lvl2);
+        } else {
+            params.width=90;
+            imageView.setImageResource(R.drawable.lvl1);
+        }
+        imageView.setLayoutParams(params);
     }
 
     private Point generateNewUnicornPoint() {
