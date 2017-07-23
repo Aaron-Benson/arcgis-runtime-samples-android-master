@@ -162,7 +162,6 @@ public class MainActivity extends AppCompatActivity {
                                     //Select the identified feature
                                     mFeatureLayer.selectFeature(mIdentifiedFeature);
                                     mFeatureSelected = true;
-                                    //Toast.makeText(getApplicationContext(), "Found Unicorn!!!", Toast.LENGTH_LONG).show();
 
                                     // begin unicorn
                                     AlertDialog.Builder builder = new AlertDialog.Builder(context);
@@ -185,7 +184,11 @@ public class MainActivity extends AppCompatActivity {
                                             image.setLayoutParams(layoutParams);
                                         }
                                     });
-                                    // end unicorn
+                                    // end unicorn image popup
+
+                                    // message on top of
+                                    Toast.makeText(getApplicationContext(), "You found Fire, the Unicorn!!!", Toast.LENGTH_LONG).show();
+
                                 }
                             }
                         } catch (InterruptedException | ExecutionException e) {
