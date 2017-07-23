@@ -9,14 +9,10 @@
         android:layout_width="385dp"
         android:layout_height="409dp"
         android:src="@drawable/unicorn_art" />
-
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent" />
-
+   
     <EditText
         android:id="@+id/editText"
-        android:layout_width="349dp"
+        android:layout_width="300dp"
         android:layout_height="wrap_content"
         android:ems="10"
         android:inputType="textPersonName"
