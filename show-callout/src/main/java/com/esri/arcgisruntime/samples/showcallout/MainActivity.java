@@ -346,8 +346,12 @@ public class MainActivity extends AppCompatActivity {
                 PackageManager.PERMISSION_GRANTED;
         boolean permissionCheck2 = ContextCompat.checkSelfPermission(MainActivity.this, reqPermissions[1]) ==
                 PackageManager.PERMISSION_GRANTED;
+        boolean permissionCheck3 = ContextCompat.checkSelfPermission(MainActivity.this, reqPermissions[2]) ==
+                PackageManager.PERMISSION_GRANTED;
+        boolean permissionCheck4 = ContextCompat.checkSelfPermission(MainActivity.this, reqPermissions[3]) ==
+                PackageManager.PERMISSION_GRANTED;
 
-        if (!(permissionCheck1 && permissionCheck2)) {
+        if (!(permissionCheck1 && permissionCheck2 && permissionCheck3 && permissionCheck4)) {
             // If permissions are not already granted, request permission from the user.
             ActivityCompat.requestPermissions(MainActivity.this, reqPermissions, requestCode);
         }
