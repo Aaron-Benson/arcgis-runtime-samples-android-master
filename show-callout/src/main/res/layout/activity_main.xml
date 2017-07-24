@@ -17,6 +17,8 @@
         android:layout_height="fill_parent">
     </com.esri.arcgisruntime.mapping.view.MapView>
 
+
+
     <ImageView
     android:id="@+id/outside_imageview"
     android:layout_width="120px"
@@ -34,5 +36,16 @@
         android:layout_alignLeft="@id/mapView"
         android:scaleType="fitXY"
         android:interpolator="@android:anim/bounce_interpolator"></ImageView>
+
+    <ImageView
+        android:id="@+id/splash"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignBottom="@id/mapView"
+        android:layout_alignLeft="@id/mapView"
+        android:layout_alignTop="@id/mapView"
+        android:layout_alignRight="@id/mapView"
+        android:scaleType="fitXY"
+        android:src="@drawable/splash"/>
 
 </RelativeLayout>

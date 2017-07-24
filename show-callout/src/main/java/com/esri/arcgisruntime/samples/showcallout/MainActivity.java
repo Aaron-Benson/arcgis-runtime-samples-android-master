@@ -27,6 +27,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -74,9 +75,15 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -85,6 +92,7 @@ import java.util.Random;
 import java.util.concurrent.ExecutionException;
 
 import au.com.bytecode.opencsv.CSVReader;
+import au.com.bytecode.opencsv.CSVWriter;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -95,6 +103,8 @@ public class MainActivity extends AppCompatActivity {
     private FeatureLayer mFeatureLayer;
     private boolean mFeatureSelected = false;
     private ArcGISFeature mIdentifiedFeature;
+
+    private boolean splashing;
 
     private int width = 0;
     private int height = 0;
@@ -113,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
 
     private int requestCode = 2;
     String[] reqPermissions = new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission
-            .ACCESS_COARSE_LOCATION};
+            .ACCESS_COARSE_LOCATION, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
 
     private class HistoricCoordinate {
         public double x;
@@ -163,7 +173,7 @@ public class MainActivity extends AppCompatActivity {
             double distance = 0;
 
             QueryParameters query = new QueryParameters();
-            query.setWhereClause("OBJECTID = 111");
+            query.setWhereClause("OBJECTID = 115");
             query.setReturnGeometry(true);
             query.setOutSpatialReference(wgs84);
             final ListenableFuture<FeatureQueryResult> queryResult = mFeatureLayer.getFeatureTable().queryFeaturesAsync(query);
@@ -185,8 +195,10 @@ public class MainActivity extends AppCompatActivity {
             });
 
             Point currentLocation = mMapView.screenToLocation(new android.graphics.Point(Math.round(width / 2), Math.round(height / 2)));
-            if (currentLocation != null)
+            if (currentLocation != null) {
                 historicCoordinates.add(new HistoricCoordinate(currentLocation.getX(), currentLocation.getY()));
+            }
+
 
             if (!mFeatureSelected) {
 
@@ -226,19 +238,10 @@ public class MainActivity extends AppCompatActivity {
                                             ImageView image = (ImageView) dialog.findViewById(R.id.foundUnicornImage);
                                             ViewGroup.LayoutParams params = image.getLayoutParams();
                                             image.setImageResource(R.drawable.foundunicorn01);
-                                             //params.width=90*9;
-                                            // Bitmap icon = BitmapFactory.decodeResource(context.getResources(), R.drawable.found_unicorn_image);
-                                            // float imageWidthInPX = (float)image.getWidth();
-                                            //LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(Math.round(imageWidthInPX),
-                                            //        Math.round(imageWidthInPX * (float)icon.getHeight() / (float)icon.getWidth()));
-                                            // image.setLayoutParams(layoutParams);
 
                                         }
                                     });
                                     // end unicorn image popup
-
-                                    // message on top of
-                                    //Toast.makeText(getApplicationContext(), "You found Fire, the Unicorn!!!", Toast.LENGTH_LONG).show();
 
                                 }
                             }
@@ -255,6 +258,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         mIdentifiedFeature.setGeometry(normalizedPoint);
+
                         final ListenableFuture<Void> updateFuture = mFeatureLayer.getFeatureTable().updateFeatureAsync(mIdentifiedFeature);
                         updateFuture.addDoneListener(new Runnable() {
                             @Override
@@ -314,6 +318,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        splashing = true;
+
         // inflate MapView from layout
         mMapView = (MapView) findViewById(R.id.mapView);
         // create a map with the Basemap Type topographic
@@ -347,16 +353,30 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-
         final ServiceFeatureTable serviceFeatureTable = new ServiceFeatureTable("https://services8.arcgis.com/DnMrXNZ4mQTjDjkz/ArcGIS/rest/services/Unicorn/FeatureServer/0");
         mFeatureLayer = new FeatureLayer(serviceFeatureTable);
+
+        mFeatureLayer.setVisible(true);
+
         mMap.getOperationalLayers().add(mFeatureLayer);
 
         final Handler h = new Handler();
-        final int delay = 3000; //milliseconds
+        final int delay; //milliseconds
+        if (splashing)
+            delay = 6000;
+        else
+            delay = 3000;
 
         h.postDelayed(new Runnable(){
             public void run(){
+
+                if (splashing) {
+                    ImageView splash = (ImageView) findViewById(R.id.splash);
+                    splash.setVisibility(View.INVISIBLE);
+                    setTheme(R.style.AppTheme);
+                    splashing = false;
+                }
+
                 // Get user location
                 mMapView.getLocationDisplay().setAutoPanMode(LocationDisplay.AutoPanMode.OFF);
                 mMapView.getLocationDisplay().setAutoPanMode(LocationDisplay.AutoPanMode.RECENTER);
@@ -382,19 +402,31 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
     @Override
     protected void onPause(){
+        try {
+            File path = Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_DOCUMENTS);
+            File file = new File(path.getName() + File.separator + "historicData.csv");
+            if(!file.exists())
+                file.createNewFile();
+            FileOutputStream fos = new FileOutputStream(path.getName() + "/historicData.csv");
+            for(HistoricCoordinate coord : historicCoordinates)
+                fos.write((Double.toString(coord.x) + "," + Double.toString(coord.y)).getBytes());
+            fos.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         super.onPause();
         mMapView.pause();
-        // Send historic data to ArcGIS Online
     }
 
     @Override
     protected void onResume(){
+        historicCoordinates = new ArrayList<HistoricCoordinate>();
         super.onResume();
         mMapView.resume();
-        historicCoordinates = new ArrayList<HistoricCoordinate>();
     }
 
     private double distanceCheckUnicorn(double latUser, double longUser, double latUnicorn, double longUnicorn) {
@@ -439,7 +471,7 @@ public class MainActivity extends AppCompatActivity {
         String[] cla = null;
 
         //int rand = new Random(35).nextInt();
-        int rand = (int)(Math.random() * 34 + 1);
+        int rand = (int)(Math.random() * 33 + 1);
 
         try {
             CSVReader reader = new CSVReader(new InputStreamReader(getAssets().open("unicorn_locations.csv")));
