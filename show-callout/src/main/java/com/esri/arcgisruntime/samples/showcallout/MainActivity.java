@@ -365,11 +365,7 @@ public class MainActivity extends AppCompatActivity {
         mMap.getOperationalLayers().add(mFeatureLayer);
 
         final Handler h = new Handler();
-        final int delay; //milliseconds
-        if (splashing)
-            delay = 6000;
-        else
-            delay = 3000;
+        final int delay = 6000;
 
         h.postDelayed(new Runnable(){
             public void run(){
@@ -391,7 +387,7 @@ public class MainActivity extends AppCompatActivity {
                 userLocY = mMapView.getLocationDisplay().getLocation().getPosition().getY();
 
                 readWebpage("https://services8.arcgis.com/DnMrXNZ4mQTjDjkz/ArcGIS/rest/services/Unicorn/FeatureServer/0");
-                h.postDelayed(this, delay);
+                h.postDelayed(this, splashing ? delay : 3000);
             }
         }, delay);
 
